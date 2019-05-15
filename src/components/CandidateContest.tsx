@@ -220,6 +220,7 @@ interface State {
   isScrollAtBottom: boolean
   isScrollAtTop: boolean
   isScrollable: boolean
+  lastAddedWriteInId: string
   writeInCandateModalIsOpen: boolean
   writeInCandidateName: string
 }
@@ -230,6 +231,7 @@ const initialState = {
   isScrollable: false,
   isScrollAtBottom: true,
   isScrollAtTop: true,
+  lastAddedWriteInId: '',
   writeInCandateModalIsOpen: false,
   writeInCandidateName: '',
 }
@@ -243,6 +245,21 @@ class CandidateContest extends React.Component<Props, State> {
   public componentDidMount() {
     this.updateContestChoicesScrollStates()
     window.addEventListener('resize', this.updateContestChoicesScrollStates)
+    document.addEventListener(
+      'keydown',
+      e => {
+        console.log(e.key)
+        // if (e.key === 'ArrowUp') keyboard.modules.keyNavigation.up()
+        // else if (e.key === 'ArrowDown')
+        //   keyboard.modules.keyNavigation.down()
+        // else if (e.key === 'ArrowLeft')
+        //   keyboard.modules.keyNavigation.left()
+        // else if (e.key === 'ArrowRight')
+        //   keyboard.modules.keyNavigation.right()
+        // else if (e.key === 'Enter') keyboard.modules.keyNavigation.press()
+      },
+      false
+    )
   }
 
   public componentDidUpdate(prevProps: Props) {
@@ -250,10 +267,20 @@ class CandidateContest extends React.Component<Props, State> {
     if (this.props.vote.length !== prevProps.vote.length) {
       this.updateContestChoicesScrollStates()
     }
+    const { lastAddedWriteInId } = this.state
+    lastAddedWriteInId && this.focusWriteInCanddate(lastAddedWriteInId)
   }
 
   public componentWillUnmount = () => {
     window.removeEventListener('resize', this.updateContestChoicesScrollStates)
+  }
+
+  public focusWriteInCanddate = (lastAddedWriteInId: string) => {
+    window.setTimeout(() => {
+      const writeInElement = document.getElementById(lastAddedWriteInId)
+      writeInElement && writeInElement.focus()
+      this.setState({ lastAddedWriteInId: '' })
+    }, 0)
   }
 
   public findCandidateById = (candidates: Candidate[], id: string) =>
@@ -325,15 +352,19 @@ class CandidateContest extends React.Component<Props, State> {
     const normalizedCandidateName = this.normalizeName(
       this.state.writeInCandidateName
     )
+    const id = `write-in__${camelCase(normalizedCandidateName)}`
     this.props.updateVote(contest.id, [
       ...vote,
       {
-        id: `write-in__${camelCase(normalizedCandidateName)}`,
+        id,
         isWriteIn: true,
         name: normalizedCandidateName,
       },
     ])
-    this.setState({ writeInCandidateName: '' })
+    this.setState({
+      writeInCandidateName: '',
+      lastAddedWriteInId: id,
+    })
     this.toggleWriteInCandidateModal(false)
   }
 
@@ -346,7 +377,13 @@ class CandidateContest extends React.Component<Props, State> {
     this.setState({ writeInCandateModalIsOpen })
   }
 
+  // button => console.log(button)
+  public onKeyPress = (button: string) => {
+    console.log('onKeyPress(): ', button)
+  }
+
   public onKeyboardInputChange = (writeInCandidateName: string) => {
+    console.log('onKeyboardInputChange: ', writeInCandidateName)
     this.setState({ writeInCandidateName })
   }
 
@@ -647,6 +684,11 @@ class CandidateContest extends React.Component<Props, State> {
                   layoutName="default"
                   theme="hg-theme-default vs-simple-keyboard"
                   onChange={this.onKeyboardInputChange}
+                  onRender={() => console.log('onRender')}
+                  // onChangeAll={(inputs: any) =>
+                  //   console.log('onChangeAll', inputs)
+                  // }
+                  onKeyPress={this.onKeyPress}
                   useButtonTag
                 />
               </WriteInCandidateForm>
